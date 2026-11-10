@@ -1,10 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planogram</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Planogram Viewer</title>
 
     <style>
         * {
@@ -14,8 +15,7 @@
         }
 
         body {
-            background: #525659;
-            font-family: Arial, sans-serif;
+            background: #e5e5e5;
         }
 
         #pdf-container {
@@ -23,8 +23,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            padding: 10px 0;
+            gap: 8px;
         }
 
         canvas {
@@ -35,59 +34,75 @@
         }
 
         #status {
-            color: white;
+            padding: 30px;
             text-align: center;
-            padding: 20px;
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
+
 <body>
 
-<div id="status">Завантаження планограми...</div>
+<div id="status">Завантаження документа...</div>
 
 <div id="pdf-container"></div>
 
-<!-- PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <script>
-    const PDF_URL = './planogram.pdf';
 
     pdfjsLib.GlobalWorkerOptions.workerSrc =
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    async function loadPDF() {
-        const container = document.getElementById('pdf-container');
-        const status = document.getElementById('status');
+    async function loadDocument() {
+
+        const container =
+            document.getElementById('pdf-container');
+
+        const status =
+            document.getElementById('status');
 
         try {
-            const pdf = await pdfjsLib.getDocument(PDF_URL).promise;
+
+            const pdf = await pdfjsLib.getDocument(
+                './planogram.pdf'
+            ).promise;
 
             status.style.display = 'none';
 
-            for (let pageNumber = 1;
-                 pageNumber <= pdf.numPages;
-                 pageNumber++) {
+            for (let i = 1; i <= pdf.numPages; i++) {
 
-                const page = await pdf.getPage(pageNumber);
+                const page = await pdf.getPage(i);
 
-                const baseViewport = page.getViewport({ scale: 1 });
+                const originalViewport =
+                    page.getViewport({ scale: 1 });
 
-                // Масштабування під ширину екрана
-                const scale = container.clientWidth / baseViewport.width;
+                const width = container.clientWidth;
 
-                const viewport = page.getViewport({ scale });
+                const scale = width / originalViewport.width;
 
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
+                const viewport =
+                    page.getViewport({ scale });
 
-                const pixelRatio = window.devicePixelRatio || 1;
+                const canvas =
+                    document.createElement('canvas');
 
-                canvas.width = viewport.width * pixelRatio;
-                canvas.height = viewport.height * pixelRatio;
+                const context =
+                    canvas.getContext('2d');
 
-                canvas.style.width = viewport.width + 'px';
-                canvas.style.height = viewport.height + 'px';
+                const ratio =
+                    window.devicePixelRatio || 1;
+
+                canvas.width = Math.ceil(
+                    viewport.width * ratio
+                );
+
+                canvas.height = Math.ceil(
+                    viewport.height * ratio
+                );
+
+                canvas.style.width = '100%';
+                canvas.style.height = 'auto';
 
                 container.appendChild(canvas);
 
@@ -95,22 +110,25 @@
                     canvasContext: context,
                     viewport: viewport,
                     transform: [
-                        pixelRatio, 0,
-                        0, pixelRatio,
+                        ratio, 0,
+                        0, ratio,
                         0, 0
                     ]
                 }).promise;
+
             }
 
         } catch (error) {
-            console.error('PDF loading error:', error);
+
+            console.error(error);
 
             status.textContent =
-                'Не вдалося завантажити PDF. Перевірте доступність файлу.';
+                'Помилка завантаження: ' + error.message;
         }
     }
 
-    loadPDF();
+    loadDocument();
+
 </script>
 
 </body>
